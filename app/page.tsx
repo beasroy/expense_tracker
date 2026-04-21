@@ -5,6 +5,7 @@ import axios from "axios";
 
 import { ExpenseForm } from "@/app/components/ExpenseForm";
 import { ExpenseTable } from "@/app/components/ExpenseTable";
+import { normalizeCategoryName } from "@/lib/category";
 import { normalizeApiExpense, type ApiExpense, type Expense } from "@/lib/expenses";
 
 export default function Home() {
@@ -30,7 +31,7 @@ export default function Home() {
     const sortParam = next?.sort ?? sort;
 
     const params = new URLSearchParams();
-    if (category) params.set("category", category);
+    if (category) params.set("category", normalizeCategoryName(category));
     params.set("sort", sortParam);
 
     setIsLoading(true);

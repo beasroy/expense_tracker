@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { normalizeCategoryName } from "@/lib/category";
 import { createExpenseBodySchema } from "@/lib/validators/expense";
 
 function badRequest(message: string, details?: unknown) {
@@ -73,10 +74,13 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
-  const category = url.searchParams.get("category")?.trim();
+  const categoryRaw = url.searchParams.get("category")?.trim();
+  const categoryNorm = categoryRaw ? normalizeCategoryName(categoryRaw) : "";
   const sort = url.searchParams.get("sort")?.trim();
 
-  const where = category ? { category: { name: category } } : undefined;
+  const where = categoryNorm
+    ? { category: { name: categoryNorm } }
+    : undefined;
 
   const dateOrder: "asc" | "desc" =
     sort === "date_asc" || sort === "asc" ? "asc" : "desc";

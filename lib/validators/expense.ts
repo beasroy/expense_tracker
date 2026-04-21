@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { normalizeCategoryName } from "@/lib/category";
+
 function parseAmountToPaise(amount: unknown): number {
   if (typeof amount === "number" && Number.isFinite(amount)) {
     return Math.round(amount * 100);
@@ -25,7 +27,8 @@ export const createExpenseBodySchema = z.object({
     .string()
     .trim()
     .min(1, "category is required")
-    .max(50, "category is too long"),
+    .max(50, "category is too long")
+    .transform((s) => normalizeCategoryName(s)),
   description: z
     .string()
     .trim()

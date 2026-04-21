@@ -13,7 +13,7 @@ export type ApiExpense = {
   description: string;
   date: string; // ISO string
   createdAt: string; // ISO string
-  category: { id: string; name: string; createdAt: string };
+  category: { id: string; name: string };
 };
 
 function localYyyyMmDdFromDate(d: Date) {

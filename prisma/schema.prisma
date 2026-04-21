@@ -15,10 +15,9 @@ datasource db {
 }
 
 model Category {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  expenses  Expense[]
+  id       String    @id @default(cuid())
+  name     String    @unique
+  expenses Expense[]
 }
 
 model Expense {
