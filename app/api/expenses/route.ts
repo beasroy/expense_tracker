@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { createExpenseBodySchema } from "@/lib/validators/expense";
 
-function badRequest(message: string) {
-  return NextResponse.json({ error: message }, { status: 400 });
-}
-
-function parseAmountPaise(amount: unknown): number | null {
- if (typeof amount === "number" && Number.isFinite(amount)) {
-    return Math.round(amount * 100);
-  }
-  if (typeof amount === "string") {
-    const trimmed = amount.trim();
-    if (!trimmed) return null;
-    const n = Number(trimmed);
-    if (!Number.isFinite(n)) return null;
-    return Math.round(n * 100);
-  }
-  return null;
+function badRequest(message: string, details?: unknown) {
+  return NextResponse.json({ error: message, details }, { status: 400 });
 }
 
 export async function POST(req: NextRequest) {
@@ -27,20 +14,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return badRequest("Invalid JSON body");
 
-  const amountPaise = parseAmountPaise(body.amount);
-  const categoryName = typeof body.category === "string" ? body.category.trim() : "";
-  const description = typeof body.description === "string" ? body.description.trim() : "";
-  const dateStr = typeof body.date === "string" ? body.date : null;
+  const parsed = createExpenseBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return badRequest("Invalid request body", parsed.error.flatten());
+  }
 
-
-  if (amountPaise == null || amountPaise <= 0)
-    return badRequest("amount must be a positive number");
-  if (!categoryName) return badRequest("category is required");
-  if (!description) return badRequest("description is required");
-  if (!dateStr) return badRequest("date is required (ISO string)");
-  
-  const date = new Date(dateStr);
-  if (Number.isNaN(date.getTime())) return badRequest("date must be valid ISO");
+  const amountPaise = parsed.data.amount;
+  const categoryName = parsed.data.category;
+  const description = parsed.data.description;
+  const date = parsed.data.date;
   
   const existingKey = await prisma.idempotencyKey.findUnique({
     where: { key: idemKey },
