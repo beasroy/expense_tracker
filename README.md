@@ -94,7 +94,6 @@ Things that are reasonable next steps but were **out of scope** for this pass:
 
 - **Authentication / JWT (or sessions)** — No login, no multi-tenant isolation; all data is effectively “global” for the deployment.
 - **Authorization** — No per-user `ownerId` on rows.
-- **E2E / load tests** — Manual and lint/build only.
 - **Prisma Accelerate / edge DB** — Standard Node Prisma client for API routes; no edge caching layer.
 - **i18n / multi-currency** — INR-focused formatting; amounts still stored as paise for precision.
 
@@ -114,3 +113,4 @@ Things that are reasonable next steps but were **out of scope** for this pass:
 | `npm run prisma:migrate` | Create/apply dev migrations (`prisma migrate dev`) |
 | `npm run prisma:generate` | Regenerate Prisma Client |
 | `npm run prisma:studio` | Prisma Studio (browse data) |
+| `npm test` | Jest unit tests (`__tests__/**/*.test.ts`) |
