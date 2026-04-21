@@ -20,6 +20,23 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Neon (Postgres) setup
+
+1. Create a Neon project and database.
+2. In the Neon dashboard, copy your **connection string**.
+3. Create `.env.local` and paste it as `DATABASE_URL`:
+
+```bash
+cp .env.example .env.local
+```
+
+4. Verify the DB connection locally:
+
+- Start the dev server with `npm run dev`
+- Open `http://localhost:3000/api/health/db`
+
+If everything is set up, you should see JSON like `{ "ok": true, "db": "neon", ... }`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
