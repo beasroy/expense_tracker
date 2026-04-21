@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatINRFromPaise, type Expense } from "@/lib/expenses";
+import { cn } from "@/lib/utils";
 
 type Props = {
   expenses: Expense[];
@@ -26,6 +27,7 @@ type Props = {
   onCategoryFilterChange: (next: string) => void;
   sort: "date_desc" | "date_asc";
   onSortChange: (next: "date_desc" | "date_asc") => void;
+  filterActive: boolean;
   isLoading?: boolean;
 };
 
@@ -37,6 +39,7 @@ export function ExpenseTable({
   onCategoryFilterChange,
   sort,
   onSortChange,
+  filterActive,
   isLoading = false,
 }: Props) {
   return (
@@ -57,8 +60,25 @@ export function ExpenseTable({
         <div className="flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Filter and sort">
-                <Filter />
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Filter and sort"
+                aria-pressed={filterActive}
+                title={
+                  filterActive
+                    ? "Filters or sort changed — click to adjust"
+                    : "Filter and sort"
+                }
+                className={cn(
+                  filterActive &&
+                    "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white dark:border-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500",
+                )}
+              >
+                <Filter
+                  className={cn(filterActive && "text-white")}
+                  aria-hidden
+                />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">

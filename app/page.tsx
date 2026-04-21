@@ -23,6 +23,11 @@ export default function Home() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [expenses]);
 
+  const filterActive = useMemo(
+    () => Boolean(categoryFilter) || sort !== "date_desc",
+    [categoryFilter, sort],
+  );
+
   const fetchExpenses = useCallback(async (next?: {
     category?: string;
     sort?: "date_desc" | "date_asc";
@@ -118,6 +123,7 @@ export default function Home() {
           onCategoryFilterChange={setCategoryFilter}
           sort={sort}
           onSortChange={setSort}
+          filterActive={filterActive}
           isLoading={isLoading}
         />
       </main>
