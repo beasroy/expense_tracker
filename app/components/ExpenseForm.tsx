@@ -3,16 +3,19 @@
 import { useMemo, useState } from "react";
 
 import {
+  makeId,
   todayYyyyMmDd,
-  type Expense,
 } from "@/lib/expenses";
 import { createExpenseBodySchema } from "@/lib/validators/expense";
 
 type Props = {
-  onAdd: (expense: Omit<Expense, "id" | "createdAt">) => void;
+  onCreate: (args: {
+    idempotencyKey: string;
+    body: { amount: string; category: string; description: string; date: string };
+  }) => Promise<void>;
 };
 
-export function ExpenseForm({ onAdd }: Props) {
+export function ExpenseForm({ onCreate }: Props) {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -41,24 +44,59 @@ export function ExpenseForm({ onAdd }: Props) {
   };
   const canSubmit = parsed.success;
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingIdempotency, setPendingIdempotency] = useState<{
+    key: string;
+    bodyJson: string;
+  } | null>(null);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitted(true);
     if (!parsed.success) return;
 
-    onAdd({
-      amountPaise: parsed.data.amount,
+    setSubmitError(null);
+
+    const body = {
+      amount,
       category: parsed.data.category,
       description: parsed.data.description,
       date,
-    });
+    };
+    const bodyJson = JSON.stringify(body);
 
-    setAmount("");
-    setCategory("");
-    setDescription("");
-    setDate(todayYyyyMmDd());
-    setTouched({ amount: false, category: false, description: false, date: false });
-    setSubmitted(false);
+    const idemKey =
+      pendingIdempotency?.bodyJson === bodyJson
+        ? pendingIdempotency.key
+        : makeId();
+
+    setPendingIdempotency({ key: idemKey, bodyJson });
+    setIsSubmitting(true);
+
+    try {
+      await onCreate({ idempotencyKey: idemKey, body });
+
+      setAmount("");
+      setCategory("");
+      setDescription("");
+      setDate(todayYyyyMmDd());
+      setTouched({
+        amount: false,
+        category: false,
+        description: false,
+        date: false,
+      });
+      setSubmitted(false);
+      setPendingIdempotency(null);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to create expense. Try again.";
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+
   }
 
   return (
@@ -66,6 +104,11 @@ export function ExpenseForm({ onAdd }: Props) {
       <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
         Add expense
       </h2>
+      {submitError ? (
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+          {submitError}
+        </div>
+      ) : null}
       <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
         <label className="grid gap-1">
           <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -167,10 +210,10 @@ export function ExpenseForm({ onAdd }: Props) {
         <div className="flex items-end justify-end gap-3">
           <button
             type="submit"
-            disabled={!canSubmit}
+            disabled={!canSubmit || isSubmitting}
             className="h-10 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-50 dark:text-zinc-950"
           >
-            Add
+            {isSubmitting ? "Adding..." : "Add"}
           </button>
         </div>
       </form>

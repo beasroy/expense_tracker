@@ -7,6 +7,32 @@ export type Expense = {
   createdAt: string; // ISO
 };
 
+export type ApiExpense = {
+  id: string;
+  amountPaise: number;
+  description: string;
+  date: string; // ISO string
+  createdAt: string; // ISO string
+  category: { id: string; name: string; createdAt: string };
+};
+
+function isoToYyyyMmDd(isoOrDate: string) {
+  const d = new Date(isoOrDate);
+  if (Number.isNaN(d.getTime())) return isoOrDate;
+  return d.toISOString().slice(0, 10);
+}
+
+export function normalizeApiExpense(api: ApiExpense): Expense {
+  return {
+    id: api.id,
+    amountPaise: api.amountPaise,
+    category: api.category.name,
+    description: api.description,
+    date: isoToYyyyMmDd(api.date),
+    createdAt: api.createdAt,
+  };
+}
+
 export function formatINRFromPaise(paise: number) {
   const rupees = paise / 100;
   return new Intl.NumberFormat("en-IN", {

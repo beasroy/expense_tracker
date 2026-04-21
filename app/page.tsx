@@ -1,25 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 
 import { ExpenseForm } from "@/app/components/ExpenseForm";
 import { ExpenseTable } from "@/app/components/ExpenseTable";
-import { makeId, todayYyyyMmDd, type Expense } from "@/lib/expenses";
+import { normalizeApiExpense, type ApiExpense, type Expense } from "@/lib/expenses";
 
 export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sort, setSort] = useState<"date_desc" | "date_asc">("date_desc");
 
-  const [expenses, setExpenses] = useState<Expense[]>(() => [
-    {
-      id: makeId(),
-      amountPaise: 24900,
-      category: "Food",
-      description: "Groceries",
-      date: todayYyyyMmDd(),
-      createdAt: new Date().toISOString(),
-    },
-  ]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [totalPaise, setTotalPaise] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -27,37 +22,70 @@ export default function Home() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [expenses]);
 
-  const visibleExpenses = useMemo(() => {
-    const filtered = categoryFilter
-      ? expenses.filter((e) => e.category === categoryFilter)
-      : expenses.slice();
+  async function fetchExpenses(next?: {
+    category?: string;
+    sort?: "date_desc" | "date_asc";
+  }) {
+    const category = next?.category ?? categoryFilter;
+    const sortParam = next?.sort ?? sort;
 
-    filtered.sort((a, b) =>
-      sort === "date_asc"
-        ? a.date.localeCompare(b.date)
-        : b.date.localeCompare(a.date),
-    );
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    params.set("sort", sortParam);
 
-    return filtered;
-  }, [categoryFilter, expenses, sort]);
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const { data } = await axios.get<{
+        items: ApiExpense[];
+        totalPaise: number;
+      }>("/api/expenses", {
+        params: Object.fromEntries(params.entries()),
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      });
 
-  const totalVisiblePaise = useMemo(
-    () =>
-      visibleExpenses.reduce(
-        (sum: number, e: Expense) => sum + e.amountPaise,
-        0,
-      ),
-    [visibleExpenses],
-  );
+      setExpenses(data.items.map(normalizeApiExpense));
+      setTotalPaise(data.totalPaise);
+    } catch (e: unknown) {
+      const message = axios.isAxiosError(e)
+        ? (e.response?.data as { error?: string } | undefined)?.error ||
+          e.message
+        : e instanceof Error
+          ? e.message
+          : "Failed to load expenses";
+      setLoadError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
-  function onAdd(expense: Omit<Expense, "id" | "createdAt">) {
-    const next: Expense = {
-      id: makeId(),
-      ...expense,
-      createdAt: new Date().toISOString(),
-    };
+  useEffect(() => {
+    void fetchExpenses();
+  }, [categoryFilter, sort]);
 
-    setExpenses((prev) => [next, ...prev]);
+  async function onCreate(args: {
+    idempotencyKey: string;
+    body: { amount: string; category: string; description: string; date: string };
+  }) {
+    try {
+      await axios.post("/api/expenses", args.body, {
+        headers: {
+          "X-Idempotency-Key": args.idempotencyKey,
+        },
+      });
+    } catch (e: unknown) {
+      const message = axios.isAxiosError(e)
+        ? (e.response?.data as { error?: string } | undefined)?.error ||
+          e.message
+        : e instanceof Error
+          ? e.message
+          : "Failed to create expense";
+      throw new Error(message);
+    }
+
+    await fetchExpenses();
   }
 
   return (
@@ -68,20 +96,32 @@ export default function Home() {
             Expense Tracker
           </h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Add expenses and review them locally (API integration next).
+            Add expenses and review them (Neon + Prisma).
           </p>
         </header>
 
-        <ExpenseForm onAdd={onAdd} />
+        <ExpenseForm onCreate={onCreate} />
+
+        {loadError ? (
+          <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+            {loadError}
+          </div>
+        ) : null}
         <ExpenseTable
-          expenses={visibleExpenses}
-          totalPaise={totalVisiblePaise}
+          expenses={expenses}
+          totalPaise={totalPaise}
           categories={categories}
           categoryFilter={categoryFilter}
           onCategoryFilterChange={setCategoryFilter}
           sort={sort}
           onSortChange={setSort}
         />
+
+        {isLoading ? (
+          <div className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+            Loading…
+          </div>
+        ) : null}
       </main>
     </div>
   );
