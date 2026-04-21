@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 import { ExpenseForm } from "@/app/components/ExpenseForm";
@@ -22,10 +22,10 @@ export default function Home() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [expenses]);
 
-  async function fetchExpenses(next?: {
+  const fetchExpenses = useCallback(async (next?: {
     category?: string;
     sort?: "date_desc" | "date_asc";
-  }) {
+  }) => {
     const category = next?.category ?? categoryFilter;
     const sortParam = next?.sort ?? sort;
 
@@ -59,11 +59,13 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [categoryFilter, sort]);
 
   useEffect(() => {
+    // Data fetch on filter/sort changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchExpenses();
-  }, [categoryFilter, sort]);
+  }, [fetchExpenses]);
 
   async function onCreate(args: {
     idempotencyKey: string;
@@ -96,7 +98,7 @@ export default function Home() {
             Expense Tracker
           </h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Add expenses and review them (Neon + Prisma).
+            Add expenses and review them .
           </p>
         </header>
 
@@ -115,13 +117,8 @@ export default function Home() {
           onCategoryFilterChange={setCategoryFilter}
           sort={sort}
           onSortChange={setSort}
+          isLoading={isLoading}
         />
-
-        {isLoading ? (
-          <div className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-            Loading…
-          </div>
-        ) : null}
       </main>
     </div>
   );

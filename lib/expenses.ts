@@ -16,10 +16,17 @@ export type ApiExpense = {
   category: { id: string; name: string; createdAt: string };
 };
 
+function localYyyyMmDdFromDate(d: Date) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function isoToYyyyMmDd(isoOrDate: string) {
   const d = new Date(isoOrDate);
   if (Number.isNaN(d.getTime())) return isoOrDate;
-  return d.toISOString().slice(0, 10);
+  return localYyyyMmDdFromDate(d);
 }
 
 export function normalizeApiExpense(api: ApiExpense): Expense {
@@ -31,6 +38,19 @@ export function normalizeApiExpense(api: ApiExpense): Expense {
     date: isoToYyyyMmDd(api.date),
     createdAt: api.createdAt,
   };
+}
+
+export function parseYyyyMmDdToLocalDate(yyyyMmDd: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(yyyyMmDd);
+  if (!m) return new Date(yyyyMmDd);
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  return new Date(year, month - 1, day);
+}
+
+export function formatLocalDateToYyyyMmDd(d: Date) {
+  return localYyyyMmDdFromDate(d);
 }
 
 export function formatINRFromPaise(paise: number) {

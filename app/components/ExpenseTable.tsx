@@ -3,6 +3,7 @@
 import { Filter } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,7 @@ type Props = {
   onCategoryFilterChange: (next: string) => void;
   sort: "date_desc" | "date_asc";
   onSortChange: (next: "date_desc" | "date_asc") => void;
+  isLoading?: boolean;
 };
 
 export function ExpenseTable({
@@ -35,6 +37,7 @@ export function ExpenseTable({
   onCategoryFilterChange,
   sort,
   onSortChange,
+  isLoading = false,
 }: Props) {
   return (
     <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -139,26 +142,47 @@ export function ExpenseTable({
             </tr>
           </thead>
           <tbody>
-            {expenses.map((e) => (
-              <tr
-                key={e.id}
-                className="text-sm text-zinc-950 dark:text-zinc-50"
-              >
-                <td className="border-b border-zinc-100 py-3 pr-4 dark:border-zinc-900">
-                  {e.date}
-                </td>
-                <td className="border-b border-zinc-100 py-3 pr-4 dark:border-zinc-900">
-                  {e.category}
-                </td>
-                <td className="border-b border-zinc-100 py-3 pr-4 dark:border-zinc-900">
-                  {e.description}
-                </td>
-                <td className="border-b border-zinc-100 py-3 text-right tabular-nums dark:border-zinc-900">
-                  {formatINRFromPaise(e.amountPaise)}
-                </td>
-              </tr>
-            ))}
-            {expenses.length === 0 ? (
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <tr key={`skeleton-${i}`} className="text-sm">
+                  <td className="border-b border-zinc-100 py-3 pr-4 dark:border-zinc-900">
+                    <Skeleton className="h-4 w-24" />
+                  </td>
+                  <td className="border-b border-zinc-100 py-3 pr-4 dark:border-zinc-900">
+                    <Skeleton className="h-4 w-20" />
+                  </td>
+                  <td className="border-b border-zinc-100 py-3 pr-4 dark:border-zinc-900">
+                    <Skeleton className="h-4 w-64" />
+                  </td>
+                  <td className="border-b border-zinc-100 py-3 text-right dark:border-zinc-900">
+                    <div className="flex justify-end">
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              expenses.map((e) => (
+                <tr
+                  key={e.id}
+                  className="text-sm text-zinc-950 dark:text-zinc-50"
+                >
+                  <td className="border-b border-zinc-100 py-3 pr-4 dark:border-zinc-900">
+                    {e.date}
+                  </td>
+                  <td className="border-b border-zinc-100 py-3 pr-4 dark:border-zinc-900">
+                    {e.category}
+                  </td>
+                  <td className="border-b border-zinc-100 py-3 pr-4 dark:border-zinc-900">
+                    {e.description}
+                  </td>
+                  <td className="border-b border-zinc-100 py-3 text-right tabular-nums dark:border-zinc-900">
+                    {formatINRFromPaise(e.amountPaise)}
+                  </td>
+                </tr>
+              ))
+            )}
+            {!isLoading && expenses.length === 0 ? (
               <tr>
                 <td
                   colSpan={4}

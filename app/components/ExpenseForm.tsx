@@ -1,12 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 
 import {
   makeId,
+  formatLocalDateToYyyyMmDd,
+  parseYyyyMmDdToLocalDate,
   todayYyyyMmDd,
 } from "@/lib/expenses";
 import { createExpenseBodySchema } from "@/lib/validators/expense";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 type Props = {
   onCreate: (args: {
@@ -183,29 +191,52 @@ export function ExpenseForm({ onCreate }: Props) {
           ) : null}
         </label>
 
-        <label className="grid gap-1">
+        <div className="grid gap-1">
           <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Date
           </span>
-          <input
-            type="date"
-            className={[
-              "h-10 rounded-lg border bg-white px-3 text-sm text-zinc-950 outline-none focus:border-zinc-400 dark:bg-zinc-950 dark:text-zinc-50",
-              show.date && errors.date?.length
-                ? "border-red-300 dark:border-red-800"
-                : "border-zinc-200 dark:border-zinc-800",
-            ].join(" ")}
-            value={date}
-            onChange={(ev) => setDate(ev.target.value)}
-            onBlur={() => setTouched((t) => ({ ...t, date: true }))}
-            aria-invalid={Boolean(show.date && errors.date?.length)}
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "h-10 justify-start px-3 text-left font-normal",
+                  !date && "text-zinc-500 dark:text-zinc-400",
+                  show.date && errors.date?.length
+                    ? "border-red-300 dark:border-red-800"
+                    : "border-zinc-200 dark:border-zinc-800",
+                )}
+                onBlur={() => setTouched((t) => ({ ...t, date: true }))}
+                aria-invalid={Boolean(show.date && errors.date?.length)}
+              >
+                <CalendarIcon className="mr-2" />
+                {date ? (
+                  format(parseYyyyMmDdToLocalDate(date), "PPP")
+                ) : (
+                  <span>Pick a date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={date ? parseYyyyMmDdToLocalDate(date) : undefined}
+                onSelect={(d) => {
+                  if (!d) return;
+                  setDate(formatLocalDateToYyyyMmDd(d));
+                  setTouched((t) => ({ ...t, date: true }));
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
           {show.date && errors.date?.[0] ? (
             <span className="text-xs text-red-600 dark:text-red-400">
               {errors.date[0]}
             </span>
           ) : null}
-        </label>
+        </div>
 
         <div className="flex items-end justify-end gap-3">
           <button
